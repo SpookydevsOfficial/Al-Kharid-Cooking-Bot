@@ -34,7 +34,7 @@ Follow these steps to add and run the bot on your local OSBot setup:
 
 3. **Run the Script**
    - Go back to OSBot.
-   - Click `Scripts`
+   - Click `Scripts` & Refresh the List
    - Find the bot in the list and click `Start` in or around the bank/range.
    - Watch as it automates cooking in Al-Kharid!
 
