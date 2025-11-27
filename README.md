@@ -29,5 +29,3 @@ A simple **OSBot 2.7.66** bot for **Old School RuneScape** that automates cookin
 Use at your own risk. Automation may violate OSRS rules.  
 
 ---
-
-![OSRS](https://i.imgur.com/9M1lF8V.png) <!-- Optional: add a relevant image or GIF -->
