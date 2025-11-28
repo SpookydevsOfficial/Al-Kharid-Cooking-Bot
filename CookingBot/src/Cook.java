@@ -4,6 +4,7 @@ import java.awt.event.KeyEvent;
 import java.util.concurrent.TimeUnit;
 
 import org.osbot.rs07.api.map.Area;
+import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.RS2Object;
 import org.osbot.rs07.api.ui.Message;
 import org.osbot.rs07.api.ui.Skill;
@@ -14,7 +15,7 @@ import org.osbot.rs07.script.ScriptManifest;
         author = "Spookydevs",
         info = "Cooks fish at Al Kharid and banks automatically",
         name = "Al Kharid Cooker",
-        version = 1.0,
+        version = 1.1,
         logo = ""
 )
 public class Cook extends Script {
@@ -110,32 +111,38 @@ public class Cook extends Script {
         RS2Object range = objects.closest("Range");
         if (range == null || !range.exists()) return;
 
-        // Walk only if more than 1 tile away
+        // Walk if more than 1 tile away
         if (myPlayer().getPosition().distance(range.getPosition()) > 1) {
             walking.walk(range.getPosition());
             while (myPlayer().isMoving()) sleep(100);
         }
 
-        // Interact with range using "Cook"
-        if (range.interact("Cook")) {
+        // Ensure range is on screen
+        if (range.getPosition() == null || range.getPosition().getPolygon(getBot()) == null) {
+            getCamera().toEntity(range);
+            sleep(random(200, 400));
+        }
 
-            // Wait for production interface (Make X)
-            long start = System.currentTimeMillis();
-            while (!getDialogues().inDialogue() && System.currentTimeMillis() - start < 5000) {
-                sleep(100);
-            }
+        // Interact if range polygon exists
+        if (range.getPosition() != null && range.getPosition().getPolygon(getBot()) != null) {
+            if (range.interact("Cook")) {
+                // Wait for production interface
+                long start = System.currentTimeMillis();
+                while (!getDialogues().inDialogue() && System.currentTimeMillis() - start < 5000) {
+                    sleep(100);
+                }
 
-            // If the production interface is open, press space to start cooking
-            if (getDialogues().inDialogue()) {
-                log("Production interface detected, pressing space to start cooking.");
-                getKeyboard().pressKey(KeyEvent.VK_SPACE);
-                sleep(random(500, 800));
-            }
+                if (getDialogues().inDialogue()) {
+                    log("Production interface detected, pressing space to start cooking.");
+                    getKeyboard().pressKey(KeyEvent.VK_SPACE);
+                    sleep(random(500, 800));
+                }
 
-            // Wait until player starts animating
-            long animStart = System.currentTimeMillis();
-            while (!myPlayer().isAnimating() && System.currentTimeMillis() - animStart < 5000) {
-                sleep(100);
+                // Wait until player starts animating
+                long animStart = System.currentTimeMillis();
+                while (!myPlayer().isAnimating() && System.currentTimeMillis() - animStart < 5000) {
+                    sleep(100);
+                }
             }
         }
     }
@@ -160,9 +167,19 @@ public class Cook extends Script {
     }
 
     private void walkToRange() throws InterruptedException {
-        walking.walk(RANGE_AREA.getRandomPosition());
+        RS2Object range = objects.closest("Range");
+        if (range == null || !range.exists()) return;
+
+        // Pick a random tile inside the RANGE_AREA
+        Position randomTile = RANGE_AREA.getRandomPosition();
+        
+        walking.walk(randomTile);
         while (myPlayer().isMoving()) sleep(100);
+
+        // Small random delay
+        sleep(random(300, 700));
     }
+
 
     private long[] formatTime(long duration) {
         long hours = TimeUnit.MILLISECONDS.toHours(duration);
@@ -202,7 +219,7 @@ public class Cook extends Script {
         int gCol = (int) (128 + 127 * Math.sin(time + 2));
         int b = (int) (128 + 127 * Math.sin(time + 4));
         g.setColor(new Color(r, gCol, b));
-        g.drawString("Al Kharid Cooker v1.0", boxX + 10, boxY - 10);
+        g.drawString("Al Kharid Cooker v1.1", boxX + 10, boxY - 10);
 
         // Stats inside banner
         g.setColor(Color.YELLOW);
