@@ -58,7 +58,15 @@ public class Cook extends Script {
         if (!gui.isFinished()) return State.WAIT;
 
         if (!itemSelected) {
-            switch (gui.getKeuze()) {
+            String choice = gui.getKeuze(); // get the selection
+
+            if (choice == null) {  // GUI closed without selection
+                log("GUI closed without selecting a fish. Stopping script.");
+                stop();
+                return State.WAIT;
+            }
+
+            switch (choice) {
                 case "Salmon": itemID = 331; break;
                 case "Shrimp": itemID = 317; break;
                 case "Tuna": itemID = 359; break;
@@ -67,9 +75,11 @@ public class Cook extends Script {
                 case "Anchovies": itemID = 321; break;
                 case "Lobster": itemID = 377; break;
                 default:
-                    log("No valid fish selected. Stopping script.");
+                    log("Invalid fish selected. Stopping script.");
                     stop();
+                    return State.WAIT;
             }
+
             itemSelected = true;
         }
 
