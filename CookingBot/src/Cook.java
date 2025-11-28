@@ -15,7 +15,7 @@ import org.osbot.rs07.script.ScriptManifest;
         author = "Spookydevs",
         info = "Cooks fish at Al Kharid and banks automatically",
         name = "Al Kharid Cooker",
-        version = 1.1,
+        version = 1.2,
         logo = ""
 )
 public class Cook extends Script {
@@ -159,21 +159,48 @@ public class Cook extends Script {
 
     private void bank() throws InterruptedException {
         RS2Object booth = objects.closest("Bank booth");
+        if (booth == null || !booth.exists()) return;
 
-        if (!bank.isOpen() && booth != null) {
+        // Ensure booth is visible
+        if (booth.getPosition().getPolygon(getBot()) == null) {
+            getCamera().toEntity(booth);
+            sleep(random(400, 700));
+        }
+
+        // Try to open the bank up to 4 times
+        int attempts = 0;
+        while (!bank.isOpen() && attempts < 4) {
+            log("Attempting to open bank... (" + (attempts + 1) + "/4)");
             booth.interact("Bank");
-            sleep(random(2500, 3300));
-        }
 
-        if (bank.isOpen()) {
-            bank.depositAll();
-            sleep(random(500, 800));
-
-            if (!bank.withdraw(itemID, 28)) {
-                log("No more fish found. Stopping script.");
-                stop();
+            // Wait up to 3 seconds for bank to open
+            for (int i = 0; i < 30; i++) {
+                if (bank.isOpen()) break;
+                sleep(100);
             }
+
+            attempts++;
+            sleep(random(300, 500));
         }
+
+        // If still not open, stop script to avoid spam
+        if (!bank.isOpen()) {
+            log("Failed to open bank after multiple attempts. Stopping script for safety.");
+            stop();
+            return;
+        }
+
+        // Once bank is open, deposit inventory
+        bank.depositAll();
+        sleep(random(600, 900));
+
+        // Withdraw fish or stop if none left
+        if (!bank.withdraw(itemID, 28)) {
+            log("No more raw fish found. Stopping script.");
+            stop();
+        }
+
+        sleep(random(500, 900));
     }
 
     private void walkToRange() throws InterruptedException {
@@ -206,10 +233,10 @@ public class Cook extends Script {
         long[] t = formatTime(runtime);
 
         // --- Dimensions for banner above chatbox ---
-        int chatboxWidth = 510;   // width of OSRS chatbox
-        int chatboxHeight = 165;  // height of OSRS chatbox
-        int boxHeight = 70;       // your banner height
-        int margin = 5;           // space above chatbox
+        int chatboxWidth = 470; 
+        int chatboxHeight = 165;
+        int boxHeight = 40;
+        int margin = 5;
 
         int boxX = 5; // align with left edge of chatbox
         int boxY = 512 - chatboxHeight - boxHeight - margin; // 512 is client height
@@ -229,7 +256,10 @@ public class Cook extends Script {
         int gCol = (int) (128 + 127 * Math.sin(time + 2));
         int b = (int) (128 + 127 * Math.sin(time + 4));
         g.setColor(new Color(r, gCol, b));
-        g.drawString("Al Kharid Cooker v1.1", boxX + 10, boxY - 10);
+
+        String runtimeText = String.format("Time: %02d:%02d:%02d", t[0], t[1], t[2]);
+
+        g.drawString("Al Kharid Cooker v1.2  |  " + runtimeText, boxX + 10, boxY - 10);
 
         // Stats inside banner
         g.setColor(Color.YELLOW);
@@ -238,8 +268,6 @@ public class Cook extends Script {
         g.drawString("Burned: " + fishBurnt, boxX + 150, textY);
         g.drawString("XP: " + xpGained, boxX + 280, textY);
         g.drawString("p/h: " + perHour, boxX + 400, textY);
-
-        g.drawString(String.format("Time: %02d:%02d:%02d", t[0], t[1], t[2]), boxX + 20, textY + 20);
 
         // Optional: highlight range and bank booth
         try {
