@@ -29,6 +29,8 @@ public class Cook extends Script {
     private long timeBegan;
     private int beginningXP;
 
+    private final java.util.List<java.awt.Point> mouseTrail = new java.util.ArrayList<>();
+    
     private static final Area BANK_AREA = new Area(3269, 3171, 3273, 3167);
     private static final Area RANGE_AREA = new Area(3273, 3181, 3276, 3179);
 
@@ -238,19 +240,19 @@ public class Cook extends Script {
         int boxHeight = 40;
         int margin = 5;
 
-        int boxX = 5; // align with left edge of chatbox
-        int boxY = 512 - chatboxHeight - boxHeight - margin; // 512 is client height
+        int boxX = 5;
+        int boxY = 512 - chatboxHeight - boxHeight - margin;
         int boxWidth = chatboxWidth;
 
         // Background
-        g.setColor(new Color(0, 0, 0, 150)); // semi-transparent black
+        g.setColor(new Color(0, 0, 0, 150));
         g.fillRect(boxX, boxY, boxWidth, boxHeight);
 
         // Border
         g.setColor(Color.WHITE);
         g.drawRect(boxX, boxY, boxWidth, boxHeight);
 
-        // Rainbow title above the box
+        // Rainbow title
         double time = System.currentTimeMillis() / 200.0;
         int r = (int) (128 + 127 * Math.sin(time));
         int gCol = (int) (128 + 127 * Math.sin(time + 2));
@@ -258,10 +260,9 @@ public class Cook extends Script {
         g.setColor(new Color(r, gCol, b));
 
         String runtimeText = String.format("Time: %02d:%02d:%02d", t[0], t[1], t[2]);
-
         g.drawString("Al Kharid Cooker v1.2  |  " + runtimeText, boxX + 10, boxY - 10);
 
-        // Stats inside banner
+        // Stats
         g.setColor(Color.YELLOW);
         int textY = boxY + 25;
         g.drawString("Cooked: " + fishCooked, boxX + 20, textY);
@@ -269,7 +270,7 @@ public class Cook extends Script {
         g.drawString("XP: " + xpGained, boxX + 280, textY);
         g.drawString("p/h: " + perHour, boxX + 400, textY);
 
-        // Optional: highlight range and bank booth
+        // Highlight range and bank booth
         try {
             RS2Object range = objects.closest("Range");
             RS2Object booth = objects.closest("Bank booth");
@@ -283,8 +284,31 @@ public class Cook extends Script {
                 g.setColor(new Color(0, 255, 0, 180));
                 g.draw(booth.getPosition().getPolygon(getBot()));
             }
-        } catch (Exception e) {
-            // Prevent paint crash
+        } catch (Exception ignored) {}
+
+        // --- Draw RGB crosshair cursor with trail ---
+        java.awt.Point mousePos = mouse.getPosition();
+
+        if (mousePos != null) {
+            mouseTrail.add(new java.awt.Point(mousePos));
+        }
+
+        // Limit trail length
+        while (mouseTrail.size() > 15) { // longer trail
+            mouseTrail.remove(0);
+        }
+
+        // Draw trail with RGB colors
+        for (int i = 0; i < mouseTrail.size(); i++) {
+            java.awt.Point p = mouseTrail.get(i);
+            float alpha = (i + 1) / (float) mouseTrail.size(); // fading
+            int trailR = (int) (128 + 127 * Math.sin(time + i));
+            int trailG = (int) (128 + 127 * Math.sin(time + 2 + i));
+            int trailB = (int) (128 + 127 * Math.sin(time + 4 + i));
+            g.setColor(new Color(trailR, trailG, trailB, Math.min(255, (int)(alpha * 255 + 100)))); // bright trail
+            int crossSize = 8; // slightly bigger for visibility
+            g.drawLine(p.x - crossSize, p.y, p.x + crossSize, p.y);
+            g.drawLine(p.x, p.y - crossSize, p.x, p.y + crossSize);
         }
     }
 
